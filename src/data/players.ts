@@ -142,7 +142,7 @@ export const players: Player[] = [
     previousClub: 'Manchester United Academy',
     position: 'Midfielder',
     positionCode: 'CM',
-    image: 'https://assets.manutd.com/AssetPicker/images/0/0/20/87/1333066/Player_Profile_Kobee_Mainoo1719482687200_large.jpg',
+    image: 'https://assets.manutd.com/AssetPicker/images/0/0/22/86/1464005/37-Kobbie-Mainoo1751376603962.png',
   },
   {
     id: 12,
