@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MatchResultPerspective {
+  WIN
+  DRAW
+  LOSS
+}
+
+enum SyncStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+model Team {
+  id             Int           @id @default(autoincrement())
+  externalApiId  Int           @unique
+  name           String
+  shortName      String?
+  logo           String?
+  homeMatches    Match[]       @relation("HomeTeamMatches")
+  awayMatches    Match[]       @relation("AwayTeamMatches")
+  opponentMatches Match[]      @relation("OpponentTeamMatches")
+  lineups        Lineup[]
+  matchPlayers   MatchPlayer[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([name])
+}
+
+model Competition {
+  id             Int       @id @default(autoincrement())
+  externalApiId  Int       @unique
+  name           String
+  country        String?
+  logo           String?
+  matches        Match[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([name])
+}
+
+model Season {
+  id             Int       @id @default(autoincrement())
+  year           Int       @unique
+  matches        Match[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([year])
+}
+
+model Match {
+  id                         Int                     @id @default(autoincrement())
+  externalApiId              Int                     @unique
+  seasonId                   Int
+  competitionId              Int
+  homeTeamId                 Int
+  awayTeamId                 Int
+  opponentTeamId             Int
+  venue                      String?
+  matchDate                  DateTime
+  status                     String
+  homeScore                  Int?
+  awayScore                  Int?
+  isManchesterUnitedHome     Boolean
+  resultForManchesterUnited  MatchResultPerspective?
+  season                     Season                  @relation(fields: [seasonId], references: [id], onDelete: Restrict)
+  competition                Competition             @relation(fields: [competitionId], references: [id], onDelete: Restrict)
+  homeTeam                   Team                    @relation("HomeTeamMatches", fields: [homeTeamId], references: [id], onDelete: Restrict)
+  awayTeam                   Team                    @relation("AwayTeamMatches", fields: [awayTeamId], references: [id], onDelete: Restrict)
+  opponentTeam               Team                    @relation("OpponentTeamMatches", fields: [opponentTeamId], references: [id], onDelete: Restrict)
+  matchStatistic             MatchStatistic?
+  matchPlayers               MatchPlayer[]
+  lineups                    Lineup[]
+  createdAt                  DateTime                @default(now())
+  updatedAt                  DateTime                @updatedAt
+
+  @@index([matchDate])
+  @@index([competitionId])
+  @@index([resultForManchesterUnited])
+  @@index([opponentTeamId])
+  @@index([seasonId, matchDate])
+}
+
+model MatchStatistic {
+  id                    Int       @id @default(autoincrement())
+  matchId               Int       @unique
+  possessionHome        Int?
+  possessionAway        Int?
+  shotsHome             Int?
+  shotsAway             Int?
+  shotsOnTargetHome     Int?
+  shotsOnTargetAway     Int?
+  cornersHome           Int?
+  cornersAway           Int?
+  foulsHome             Int?
+  foulsAway             Int?
+  yellowCardsHome       Int?
+  yellowCardsAway       Int?
+  redCardsHome          Int?
+  redCardsAway          Int?
+  offsidesHome          Int?
+  offsidesAway          Int?
+  passesHome            Int?
+  passesAway            Int?
+  match                 Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model Player {
+  id             Int           @id @default(autoincrement())
+  externalApiId  Int           @unique
+  name           String
+  nationality    String?
+  position       String?
+  photo          String?
+  matchPlayers   MatchPlayer[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([name])
+}
+
+model MatchPlayer {
+  id                Int       @id @default(autoincrement())
+  matchId           Int
+  playerId          Int
+  teamId            Int
+  isStarter         Boolean   @default(false)
+  isSubstitute      Boolean   @default(false)
+  minutesPlayed     Int?
+  goals             Int?
+  assists           Int?
+  shots             Int?
+  keyPasses         Int?
+  yellowCards       Int?
+  redCards          Int?
+  rating            Float?
+  match             Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player            Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team              Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([matchId, playerId, teamId])
+  @@index([playerId])
+  @@index([matchId])
+  @@index([teamId])
+}
+
+model Lineup {
+  id          Int       @id @default(autoincrement())
+  matchId     Int
+  teamId      Int
+  formation   String?
+  coachName   String?
+  match       Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  team        Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([matchId, teamId])
+}
+
+model SyncLog {
+  id          Int        @id @default(autoincrement())
+  type        String
+  season      Int?
+  startedAt   DateTime
+  finishedAt  DateTime?
+  status      SyncStatus
+  message     String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([startedAt])
+  @@index([type, season])
+}
+model TeamSnapshot {
+  id                Int      @id @default(autoincrement())
+  teamExternalApiId Int      @unique
+  payload           Json
+  fetchedAt         DateTime
+  expiresAt         DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([expiresAt])
+}

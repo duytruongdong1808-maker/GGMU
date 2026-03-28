@@ -1,6 +1,10 @@
 node_modules
 dist
 .vite
+.codex-vite*
+.edge-profile*/
+.env
+backend/.env
 *.local
 *.tsbuildinfo
 .vercel
